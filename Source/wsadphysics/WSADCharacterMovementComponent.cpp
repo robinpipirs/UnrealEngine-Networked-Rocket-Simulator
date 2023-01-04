@@ -114,6 +114,18 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	Velocity += Velocity.GetSafeNormal2D() *  UpdatedComponent->GetForwardVector() * Move_TickVelocityImpulse * Safe_fForwardComponent;
 	Velocity += Velocity.GetSafeNormal2D() *  UpdatedComponent->GetRightVector() * Move_TickVelocityImpulse * Safe_fRightComponent;
 
+	// Time Acceleration Gravity
+	float timeTick = GetSimulationTimeStep(deltaTime, Iterations);
+	FVector FallAcceleration = GetFallingLateralAcceleration(deltaTime);
+	FallAcceleration.Z = 0.f;
+	
+	// Compute current gravity
+	const FVector Gravity(0.f, 0.f, GetGravityZ());
+	float GravityTime = timeTick;
+
+	// Apply gravity
+	Velocity = NewFallVelocity(Velocity, Gravity, GravityTime);
+	
 	// Calc Velocity
 	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 	{
