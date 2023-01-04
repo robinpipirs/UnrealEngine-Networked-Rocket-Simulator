@@ -13,6 +13,9 @@ class AwsadphysicsCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Movement) class UWSADCharacterMovementComponent* WSADCharacterMovementComponent;
+	
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
@@ -38,7 +41,7 @@ class AwsadphysicsCharacter : public ACharacter
 	class UInputAction* LookAction;
 
 public:
-	AwsadphysicsCharacter();
+	AwsadphysicsCharacter(const FObjectInitializer& ObjectInitializer);
 	
 
 protected:

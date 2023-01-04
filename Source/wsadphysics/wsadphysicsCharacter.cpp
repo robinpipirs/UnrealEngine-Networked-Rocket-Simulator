@@ -9,13 +9,15 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "WSADCharacterMovementComponent.h"
 
 
 //////////////////////////////////////////////////////////////////////////
 // AwsadphysicsCharacter
 
-AwsadphysicsCharacter::AwsadphysicsCharacter()
+AwsadphysicsCharacter::AwsadphysicsCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UWSADCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
+	WSADCharacterMovementComponent = Cast<UWSADCharacterMovementComponent>(GetCharacterMovement());
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
