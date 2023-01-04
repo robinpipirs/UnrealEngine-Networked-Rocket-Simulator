@@ -27,7 +27,7 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 	class FSavedMove_WSAD : public FSavedMove_Character
 	{
 		float Saved_fForwardComponent = 0.f;
-		float  Saved_fRightComponent = 0.f;
+		float Saved_fRightComponent = 0.f;
 		
 	public:
 		FSavedMove_WSAD();
