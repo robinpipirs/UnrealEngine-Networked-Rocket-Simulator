@@ -26,8 +26,8 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 
 	class FSavedMove_WSAD : public FSavedMove_Character
 	{
-		float Saved_fForwardComponent:0.f;
-		float Saved_fRightComponent:0.f;
+		float Saved_fForwardComponent = 0.f;
+		float Saved_fRightComponent = 0.f;
 		
 	public:
 		FSavedMove_WSAD();
@@ -59,7 +59,7 @@ public:
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 protected:
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
-	void PhysCustom(float deltaTime, int32 Iterations);
+	void PhysCustom(float deltaTime, int32 Iterations) override;
 	void PhysMove(float deltaTime, int32 Iterations);
 
 public:
