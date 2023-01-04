@@ -4,6 +4,7 @@
 #include "WSADCharacterMovementComponent.h"
 
 #include "GameFramework/Character.h"
+#include "GameFramework/PhysicsVolume.h"
 
 
 UWSADCharacterMovementComponent::FSavedMove_WSAD::FSavedMove_WSAD()
@@ -116,24 +117,44 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	// Calc Velocity
 	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 	{
-		CalcVelocity(deltaTime, Move_Friction, true, GetMaxBrakingDeceleration());
+		const float Friction = 0.5f * UpdatedComponent->GetPhysicsVolume()->FluidFriction;
+		CalcVelocity(deltaTime, Friction, true, GetMaxBrakingDeceleration());
+		// CalcVelocity(deltaTime, Move_Friction, true, GetMaxBrakingDeceleration());
 	}
 	ApplyRootMotionToVelocity(deltaTime);
 
 	// Perform Move
 	Iterations++;
 	bJustTeleported = false;
-
-	const FVector OldLocation = UpdatedComponent->GetComponentLocation();
-	const FQuat OldRotation = UpdatedComponent->GetComponentRotation().Quaternion();
+	
+	FVector OldLocation = UpdatedComponent->GetComponentLocation();
+	const FVector Adjusted = Velocity * deltaTime;
 	FHitResult Hit(1.f);
-	const FVector Adjusted = Velocity * deltaTime; // x = v * dt
-	SafeMoveUpdatedComponent(Adjusted, OldRotation, true, Hit);
+	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
 
 	if (Hit.Time < 1.f)
 	{
-		HandleImpact(Hit, deltaTime, Adjusted);
-		SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+		const FVector GravDir = FVector(0.f, 0.f, -1.f);
+		const FVector VelDir = Velocity.GetSafeNormal();
+		const float UpDown = GravDir | VelDir;
+
+		bool bSteppedUp = false;
+		if ((FMath::Abs(Hit.ImpactNormal.Z) < 0.2f) && (UpDown < 0.5f) && (UpDown > -0.2f) && CanStepUp(Hit))
+		{
+			float stepZ = UpdatedComponent->GetComponentLocation().Z;
+			bSteppedUp = StepUp(GravDir, Adjusted * (1.f - Hit.Time), Hit);
+			if (bSteppedUp)
+			{
+				OldLocation.Z = UpdatedComponent->GetComponentLocation().Z + (OldLocation.Z - stepZ);
+			}
+		}
+
+		if (!bSteppedUp)
+		{
+			//adjust and try again
+			HandleImpact(Hit, deltaTime, Adjusted);
+			SlideAlongSurface(Adjusted, (1.f - Hit.Time), Hit.Normal, Hit, true);
+		}
 	}
 
 	// Update Outgoing Velocity & Acceleration
@@ -145,6 +166,8 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 
 void UWSADCharacterMovementComponent::SetForwardComponent(const float Forward)
 {
+	UE_LOG(LogTemp, Log, TEXT("forward=(%.3f)"), Forward);
+	
 	Safe_fForwardComponent = Forward;
 }
 
