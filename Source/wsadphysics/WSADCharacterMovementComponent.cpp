@@ -124,7 +124,7 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	float GravityTime = timeTick;
 
 	// Apply gravity
-	Velocity = NewFallVelocity(Velocity, Gravity, GravityTime);
+	Velocity += NewFallVelocity(Velocity, Gravity, GravityTime);
 	
 	// Calc Velocity
 	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
