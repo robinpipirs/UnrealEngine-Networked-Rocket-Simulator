@@ -81,11 +81,16 @@ void AwsadphysicsCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		//Moving
+<<<<<<< Updated upstream
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Move);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Look);
 
+=======
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Rotate);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AwsadphysicsCharacter::Rotate);
+>>>>>>> Stashed changes
 	}
 
 }
