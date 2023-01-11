@@ -6,56 +6,57 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/PhysicsVolume.h"
 
-
-UWSADCharacterMovementComponent::FSavedMove_WSAD::FSavedMove_WSAD()
-{
-	Saved_fForwardComponent = 0.f;
-	Saved_fRightComponent = 0.f;
-}
-
 bool UWSADCharacterMovementComponent::FSavedMove_WSAD::CanCombineWith(const FSavedMovePtr& NewMove,
 	ACharacter* InCharacter, float MaxDelta) const
 {
 	FSavedMove_WSAD* NewWSADMove = static_cast<FSavedMove_WSAD*>(NewMove.Get());
 
-	const bool NewMoveMatchCurrent = Saved_fRightComponent != NewWSADMove->Saved_fRightComponent || Saved_fForwardComponent != NewWSADMove->Saved_fForwardComponent;
+	const bool NewMoveMatchCurrent =
+		Saved_vRotation != NewWSADMove->Saved_vRotation ||
+		Saved_fThrust != NewWSADMove->Saved_fThrust;
 	if (!NewMoveMatchCurrent)
 	{
 		return false;
 	}
 	
-	return FSavedMove_Character::CanCombineWith(NewMove, InCharacter, MaxDelta);
+	return Super::CanCombineWith(NewMove, InCharacter, MaxDelta);
 }
 
 void UWSADCharacterMovementComponent::FSavedMove_WSAD::Clear()
 {
-	FSavedMove_Character::Clear();
-	Saved_fForwardComponent = 0;
-	Saved_fRightComponent = 0;
+	Super::Clear();
+	Saved_vRotation = FVector2d::Zero();
+	Saved_fThrust = 0;
 }
 
 uint8 UWSADCharacterMovementComponent::FSavedMove_WSAD::GetCompressedFlags() const
 {
-	return FSavedMove_Character::GetCompressedFlags();
+	return Super::GetCompressedFlags();
 }
 
 void UWSADCharacterMovementComponent::FSavedMove_WSAD::SetMoveFor(ACharacter* C, float InDeltaTime,
 	FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
 {
-	FSavedMove_Character::SetMoveFor(C, InDeltaTime, NewAccel, ClientData);
+	Super::SetMoveFor(C, InDeltaTime, NewAccel, ClientData);
 
 	const UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(C->GetCharacterMovement());
-	Saved_fForwardComponent = CharacterMovement->Safe_fForwardComponent;
-	Saved_fRightComponent = CharacterMovement->Safe_fRightComponent;
+	if(CharacterMovement)
+	{
+		Saved_vRotation = CharacterMovement->Safe_vRotation;
+		Saved_fThrust = CharacterMovement->Safe_fThrust;
+	}
 }
 
 void UWSADCharacterMovementComponent::FSavedMove_WSAD::PrepMoveFor(ACharacter* C)
 {
-	FSavedMove_Character::PrepMoveFor(C);
+	Super::PrepMoveFor(C);
 
 	UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(C->GetCharacterMovement());
-	CharacterMovement->Safe_fForwardComponent = Saved_fForwardComponent;
-	CharacterMovement->Safe_fRightComponent = Saved_fRightComponent;
+	if(CharacterMovement)
+	{
+		CharacterMovement->Safe_vRotation = Saved_vRotation;
+		CharacterMovement->Safe_fThrust = Saved_fThrust;
+	}
 }
 
 UWSADCharacterMovementComponent::FNetworkPredictionData_Client_WSAD::FNetworkPredictionData_Client_WSAD(const UCharacterMovementComponent& ClientMovement)
@@ -70,21 +71,57 @@ FSavedMovePtr UWSADCharacterMovementComponent::FNetworkPredictionData_Client_WSA
 
 FNetworkPredictionData_Client* UWSADCharacterMovementComponent::GetPredictionData_Client() const
 {
-	check(PawnOwner != nullptr)
-
-if (ClientPredictionData == nullptr)
-{
-	UWSADCharacterMovementComponent* MutableThis = const_cast<UWSADCharacterMovementComponent*>(this);
-	MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_WSAD(*this);
-	MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
-	MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f;
-}
+	check(PawnOwner != NULL);
+	if (ClientPredictionData == nullptr)
+	{
+		UWSADCharacterMovementComponent* MutableThis = const_cast<UWSADCharacterMovementComponent*>(this);
+		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_WSAD(*this);
+		MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
+		MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.f;
+	}
 	return ClientPredictionData;
 }
 
 void UWSADCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 {
 	Super::UpdateFromCompressedFlags(Flags);
+}
+
+void UWSADCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation,
+	const FVector& OldVelocity)
+{
+	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
+	if (!CharacterOwner)
+	{
+		return;
+	}
+	
+	//Send movement vector to server
+	if (GetOwnerRole() < ROLE_Authority)
+	{
+		ServerSetThrust(Safe_fThrust);
+		ServerSetRotation(Safe_vRotation);
+	}
+}
+
+bool UWSADCharacterMovementComponent::ServerSetThrust_Validate(const float Thrust)
+{
+	return true;
+}
+
+void UWSADCharacterMovementComponent::ServerSetThrust_Implementation(const float Thrust)
+{
+	Safe_fThrust = Thrust;
+}
+
+bool UWSADCharacterMovementComponent::ServerSetRotation_Validate(const FVector2D& Rotation)
+{
+	return true;
+}
+
+void UWSADCharacterMovementComponent::ServerSetRotation_Implementation(const FVector2D& Rotation)
+{
+	Safe_vRotation = Rotation;
 }
 
 void UWSADCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
@@ -101,6 +138,25 @@ void UWSADCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iteratio
 	// }
 }
 
+float UWSADCharacterMovementComponent::GetThrustForce()
+{
+	// const float Thrust = Safe_fThrust * FMaxThrust;
+	const float Thrust = Safe_fThrust * .6f * FMaxThrust;
+	return Thrust;
+}
+
+FVector UWSADCharacterMovementComponent::NewVelocityAfterThrust(const FVector& InitialVelocity, const float ThrustForce, float DeltaTime)
+{
+	FVector Result = InitialVelocity;
+
+	if (DeltaTime > 0.f)
+	{
+		// Apply thrust.
+		Result += UpdatedComponent->GetUpVector() * DeltaTime * ThrustForce;
+	}
+	return Result;
+}
+
 void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations)
 {
 	if (deltaTime < MIN_TICK_TIME)
@@ -110,12 +166,21 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 
 	RestorePreAdditiveRootMotionVelocity();
 	
-	// Add Forward and Right Velocity to component
-	Velocity += Velocity.GetSafeNormal2D() *  UpdatedComponent->GetForwardVector() * Move_TickVelocityImpulse * Safe_fForwardComponent;
-	Velocity += Velocity.GetSafeNormal2D() *  UpdatedComponent->GetRightVector() * Move_TickVelocityImpulse * Safe_fRightComponent;
+	float timeTick = GetSimulationTimeStep(deltaTime, Iterations);
+	float ThrustTime = timeTick;
+
+	// Add Rotation
+	UE::Math::TRotator rotator = UpdatedComponent->GetComponentQuat().Rotator();
+	double rotationStrength = 100;
+	double PitchRotation = Safe_vRotation.Y * rotationStrength * deltaTime;
+	double RollRotation = Safe_vRotation.X * rotationStrength * deltaTime;
+	rotator.Add(PitchRotation, 0, RollRotation);
+	FQuat NewRotation = rotator.Quaternion();
+
+	// Add Thrust Velocity To Component
+	Velocity = NewVelocityAfterThrust(Velocity, GetThrustForce(), ThrustTime);
 
 	// Time Acceleration Gravity
-	float timeTick = GetSimulationTimeStep(deltaTime, Iterations);
 	FVector FallAcceleration = GetFallingLateralAcceleration(deltaTime);
 	FallAcceleration.Z = 0.f;
 	
@@ -125,6 +190,7 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 
 	// Apply gravity
 	Velocity = NewFallVelocity(Velocity, Gravity, GravityTime);
+
 	
 	// Calc Velocity
 	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
@@ -142,7 +208,7 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	FVector OldLocation = UpdatedComponent->GetComponentLocation();
 	const FVector Adjusted = Velocity * deltaTime;
 	FHitResult Hit(1.f);
-	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+	SafeMoveUpdatedComponent(Adjusted, NewRotation, true, Hit);
 
 	if (Hit.Time < 1.f)
 	{
@@ -176,20 +242,18 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	}
 }
 
-void UWSADCharacterMovementComponent::SetForwardComponent(const float Forward)
+void UWSADCharacterMovementComponent::SetThruster(const float Thrust)
 {
-	UE_LOG(LogTemp, Log, TEXT("forward=(%.3f)"), Forward);
-	
-	Safe_fForwardComponent = Forward;
+	Safe_fThrust = Thrust;
 }
 
-void UWSADCharacterMovementComponent::SetRightComponent(const float Right)
+void UWSADCharacterMovementComponent::SetRotation(const FVector2D& Rotation)
 {
-	Safe_fRightComponent = Right;
+	Safe_vRotation = Rotation;
 }
 
 UWSADCharacterMovementComponent::UWSADCharacterMovementComponent()
 {
-	Safe_fForwardComponent = 0.f;
-	Safe_fRightComponent = 0.f;
+	Safe_vRotation = FVector2d::Zero();
+	Safe_fThrust = 0.f;
 }

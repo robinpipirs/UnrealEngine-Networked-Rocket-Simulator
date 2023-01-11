@@ -76,46 +76,14 @@ void AwsadphysicsCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
-		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		// Thruster
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::StartThruster);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &AwsadphysicsCharacter::StopThruster);
 
-		//Moving
-<<<<<<< Updated upstream
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Move);
-
-		//Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Look);
-
-=======
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Rotate);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AwsadphysicsCharacter::Rotate);
->>>>>>> Stashed changes
 	}
 
-}
-
-void AwsadphysicsCharacter::Move(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
-	}
 }
 
 void AwsadphysicsCharacter::Look(const FInputActionValue& Value)
@@ -131,6 +99,35 @@ void AwsadphysicsCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void AwsadphysicsCharacter::StartThruster()
+{
+	Thrust(1.0f);
+}
+
+void AwsadphysicsCharacter::StopThruster()
+{
+	Thrust(.0f);
+}
+
+void AwsadphysicsCharacter::Thrust(const float ThrustValue)
+{
+	UWSADCharacterMovementComponent* MoveComp = Cast<UWSADCharacterMovementComponent>(GetCharacterMovement());
+	if (MoveComp)
+	{
+		MoveComp->SetThruster(ThrustValue);
+	}
+}
+
+void AwsadphysicsCharacter::Rotate(const FInputActionValue& Value)
+{
+	// input is a Vector2D
+	FVector2D MovementVector = Value.Get<FVector2D>();
+	UWSADCharacterMovementComponent* MoveComp = Cast<UWSADCharacterMovementComponent>(GetCharacterMovement());
+	if (MoveComp)
+	{
+		MoveComp->SetRotation(MovementVector);
+	}
+}
 
 
 

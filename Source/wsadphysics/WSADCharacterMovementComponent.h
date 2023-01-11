@@ -26,11 +26,11 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 
 	class FSavedMove_WSAD : public FSavedMove_Character
 	{
-		float Saved_fForwardComponent = 0.f;
-		float Saved_fRightComponent = 0.f;
-		
 	public:
-		FSavedMove_WSAD();
+
+		FVector2D Saved_vRotation = FVector2D::Zero();
+		float Saved_fThrust = 0.f;
+		typedef FSavedMove_Character Super;
 
 		virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
 		virtual void Clear() override;
@@ -51,21 +51,33 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 	UPROPERTY(EditDefaultsOnly) float Move_Friction = 1.3;
 
 	UPROPERTY(Transient) AwsadphysicsCharacter* WsadCharacterOwner;
-	
-	float Safe_fForwardComponent;
-	float Safe_fRightComponent;
+
+	FVector2D Safe_vRotation;
+	float Safe_fThrust;
+
+	const float FMaxThrust = 2000.f;
+
+	UFUNCTION(Unreliable, Server, WithValidation)
+	void ServerSetThrust(const float Thrust);
+
+	UFUNCTION(Unreliable, Server, WithValidation)
+	void ServerSetRotation(const FVector2D& Rotation);
 
 public:
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
+
 protected:
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
-	void PhysCustom(float deltaTime, int32 Iterations) override;
+	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
+	void PhysCustom(float deltaTime, int32 Iterations);
+	float GetThrustForce();
+	FVector NewVelocityAfterThrust(const FVector& InitialVelocity, const float ThrustForce, float DeltaTime);
 	void PhysMove(float deltaTime, int32 Iterations);
 
 public:
 	UWSADCharacterMovementComponent();
 
 public:
-	UFUNCTION(BlueprintCallable) void SetForwardComponent(float Forward);
-	UFUNCTION(BlueprintCallable) void SetRightComponent(float Right);
+	UFUNCTION(BlueprintCallable) void SetThruster(float Thrust);
+	UFUNCTION(BlueprintCallable) void SetRotation(const FVector2D& Rotation);
 };
