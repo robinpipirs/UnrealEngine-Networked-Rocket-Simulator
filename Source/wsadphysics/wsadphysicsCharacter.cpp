@@ -80,8 +80,8 @@ void AwsadphysicsCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::StartThruster);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &AwsadphysicsCharacter::StopThruster);
 
-		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Rotate);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AwsadphysicsCharacter::Rotate);
 	}
 
 }
