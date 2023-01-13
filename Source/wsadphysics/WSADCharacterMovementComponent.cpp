@@ -172,7 +172,9 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	// Add Rotation
 	UE::Math::TRotator rotator = UpdatedComponent->GetComponentQuat().Rotator();
 	double rotationStrength = 100;
-	double PitchRotation = Safe_vRotation.Y * rotationStrength * deltaTime;
+	double PitchRotation = FMath::ClampAngle(Safe_vRotation.Y * rotationStrength, -85.0f, 85.0f);
+	PitchRotation = PitchRotation * deltaTime;
+
 	double RollRotation = Safe_vRotation.X * rotationStrength * deltaTime;
 	rotator.Add(PitchRotation, 0, RollRotation);
 	FQuat NewRotation = rotator.Quaternion();
@@ -204,7 +206,6 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	// Perform Move
 	Iterations++;
 	bJustTeleported = false;
-	
 	FVector OldLocation = UpdatedComponent->GetComponentLocation();
 	const FVector Adjusted = Velocity * deltaTime;
 	FHitResult Hit(1.f);
