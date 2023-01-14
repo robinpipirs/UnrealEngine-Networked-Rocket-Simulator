@@ -170,14 +170,14 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	float ThrustTime = timeTick;
 
 	// Add Rotation
-	UE::Math::TRotator rotator = UpdatedComponent->GetComponentQuat().Rotator();
 	double rotationStrength = 100;
-	double PitchRotation = FMath::ClampAngle(Safe_vRotation.Y * rotationStrength, -85.0f, 85.0f);
-	PitchRotation = PitchRotation * deltaTime;
-
 	double RollRotation = Safe_vRotation.X * rotationStrength * deltaTime;
-	rotator.Add(PitchRotation, 0, RollRotation);
-	FQuat NewRotation = rotator.Quaternion();
+	double PitchRotation = Safe_vRotation.Y * rotationStrength * deltaTime;
+
+	FQuat OldRotation = UpdatedComponent->GetComponentQuat();
+	FQuat NewRotation = FQuat();
+	NewRotation = NewRotation.Rotator().Add(PitchRotation, 0, RollRotation).Quaternion();
+	NewRotation *= OldRotation;
 
 	// Add Thrust Velocity To Component
 	Velocity = NewVelocityAfterThrust(Velocity, GetThrustForce(), ThrustTime);
