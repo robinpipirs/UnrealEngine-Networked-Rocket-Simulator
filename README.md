@@ -17,14 +17,14 @@ Steam
 
 ## ScreenShots
 
-![MainMenuImage](Documentation\Images\MainMenu.png)
+![MainMenuImage](Documentation/Images/MainMenu.png)
 Main Menu.
 
-![CreateServerImage](Documentation\Images\CreateServer.png)
+![CreateServerImage](Documentation/Images/CreateServer.png)
 Create Server Widget.
 
-![FindServerWidget](Documentation\Images\FindServer.png)
+![FindServerWidget](Documentation/Images/FindServer.png)
 Find Server Widget.
 
-![InGame](Documentation\Images\InGame.png)
+![InGame](Documentation/Images/InGame.png)
 In Game.
