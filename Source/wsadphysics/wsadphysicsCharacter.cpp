@@ -57,15 +57,6 @@ void AwsadphysicsCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-
-	//Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -73,17 +64,7 @@ void AwsadphysicsCharacter::BeginPlay()
 
 void AwsadphysicsCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Thruster
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::StartThruster);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &AwsadphysicsCharacter::StopThruster);
-
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AwsadphysicsCharacter::Rotate);
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AwsadphysicsCharacter::Rotate);
-	}
-
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
 void AwsadphysicsCharacter::Look(const FInputActionValue& Value)
@@ -96,36 +77,6 @@ void AwsadphysicsCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
-	}
-}
-
-void AwsadphysicsCharacter::StartThruster()
-{
-	Thrust(1.0f);
-}
-
-void AwsadphysicsCharacter::StopThruster()
-{
-	Thrust(.0f);
-}
-
-void AwsadphysicsCharacter::Thrust(const float ThrustValue)
-{
-	UWSADCharacterMovementComponent* MoveComp = Cast<UWSADCharacterMovementComponent>(GetCharacterMovement());
-	if (MoveComp)
-	{
-		MoveComp->SetThruster(ThrustValue);
-	}
-}
-
-void AwsadphysicsCharacter::Rotate(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	UWSADCharacterMovementComponent* MoveComp = Cast<UWSADCharacterMovementComponent>(GetCharacterMovement());
-	if (MoveComp)
-	{
-		MoveComp->SetRotation(MovementVector);
 	}
 }
 
