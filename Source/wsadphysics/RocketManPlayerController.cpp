@@ -18,6 +18,15 @@ void ARocketManPlayerController::BeginPlay()
 
 void ARocketManPlayerController::OpenPauseMenu()
 {
+	if (bPauseMenuEnabled)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OpenPauseMenu()"));
+		if (PauseMenuWidgetClass)
+		{
+			PauseMenuWidget = CreateWidget<UPauseMenuWidget>(this, PauseMenuWidgetClass);
+			PauseMenuWidget->AddToViewport();
+		}
+	}
 }
 
 void ARocketManPlayerController::SetupInputComponent()
