@@ -36,7 +36,7 @@ void UNetworkedGameInstance::OnCreateSessionComplete(FName SessionName, bool Suc
 {
 	if (Succeeded)
 	{
-		GetWorld()->ServerTravel("/Game/ThirdPerson/Maps/ThirdPersonMap?listen");
+		GetWorld()->ServerTravel("/Game/Maps/ThirdPersonMap?listen");
 	}
 }
 

@@ -15,5 +15,6 @@ Plugins
 *.xcodeproj
 *.xcworkspace
 .idea/
+export/
 Packaged
 Packaged.zip
