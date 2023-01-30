@@ -11,10 +11,12 @@ bool UWSADCharacterMovementComponent::FSavedMove_WSAD::CanCombineWith(const FSav
 {
 	FSavedMove_WSAD* NewWSADMove = static_cast<FSavedMove_WSAD*>(NewMove.Get());
 	
-	const bool NewMoveMatchCurrent =
-		Saved_qNewRotationDelta == NewWSADMove->Saved_qNewRotationDelta ||
-		Saved_vThrust == NewWSADMove->Saved_vThrust;
-	if (!NewMoveMatchCurrent)
+	if (Saved_qNewRotation != NewWSADMove->Saved_qNewRotation)
+	{
+		return false;
+	}
+
+	if (Saved_vThrust != NewWSADMove->Saved_vThrust)
 	{
 		return false;
 	}
@@ -25,8 +27,8 @@ bool UWSADCharacterMovementComponent::FSavedMove_WSAD::CanCombineWith(const FSav
 void UWSADCharacterMovementComponent::FSavedMove_WSAD::Clear()
 {
 	Super::Clear();
-	Saved_qNewRotationDelta = FQuat();
-	Saved_vThrust = FVector::Zero();
+	Saved_qNewRotation = FQuat();
+	Saved_vThrust = FVector::ZeroVector;
 }
 
 uint8 UWSADCharacterMovementComponent::FSavedMove_WSAD::GetCompressedFlags() const
@@ -41,7 +43,7 @@ void UWSADCharacterMovementComponent::FSavedMove_WSAD::SetMoveFor(ACharacter* C,
 
 	if(const UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(C->GetCharacterMovement()))
 	{
-		Saved_qNewRotationDelta = CharacterMovement->Safe_qNewRotationDelta;
+		Saved_qNewRotation = CharacterMovement->Safe_qNewRotation;
 		Saved_vThrust = CharacterMovement->Safe_vThrust;
 	}
 }
@@ -52,7 +54,7 @@ void UWSADCharacterMovementComponent::FSavedMove_WSAD::PrepMoveFor(ACharacter* C
 
 	if(UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(C->GetCharacterMovement()))
 	{
-		CharacterMovement->Safe_qNewRotationDelta = Saved_qNewRotationDelta;
+		CharacterMovement->Safe_qNewRotation = Saved_qNewRotation;
 		CharacterMovement->Safe_vThrust = Saved_vThrust;
 	}
 }
@@ -116,7 +118,8 @@ void UWSADCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, cons
 	//Store movement vector
 	if (PawnOwner->IsLocallyControlled())
 	{
-		Safe_qNewRotationDelta = CalculateRotationDelta(DeltaSeconds);
+		Safe_qNewRotation = UpdatedComponent->GetComponentQuat() * CalculateRotationDelta(DeltaSeconds);
+		Safe_qNewRotation.Normalize();
 		Safe_vThrust = CalculateThrustDelta(DeltaSeconds);
 		// MoveDirection = PawnOwner->GetLastMovementInputVector();
 	}
@@ -124,8 +127,10 @@ void UWSADCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, cons
 	if (GetOwnerRole() < ROLE_Authority)
 	{
 		ServerSetThrust(Safe_vThrust);
-		ServerSetRotation(Safe_qNewRotationDelta);
+		ServerSetRotation(Safe_qNewRotation);
 	}
+
+	Velocity += Safe_vThrust;
 }
 
 bool UWSADCharacterMovementComponent::ServerSetThrust_Validate(const FVector& Thrust)
@@ -145,7 +150,7 @@ bool UWSADCharacterMovementComponent::ServerSetRotation_Validate(const FQuat& Ro
 
 void UWSADCharacterMovementComponent::ServerSetRotation_Implementation(const FQuat& Rotation)
 {
-	Safe_qNewRotationDelta = Rotation;
+	Safe_qNewRotation = Rotation;
 }
 
 void UWSADCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
@@ -172,11 +177,9 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	RestorePreAdditiveRootMotionVelocity();
 	
 	float timeTick = GetSimulationTimeStep(deltaTime, Iterations);
-
-	FQuat NewRotation = UpdatedComponent->GetComponentQuat() * Safe_qNewRotationDelta;
-
+	
 	// Add Thrust Velocity To Component
-	Velocity = Velocity + Safe_vThrust;
+	// Velocity = Velocity + Safe_vThrust;
 
 	// Time Acceleration Gravity
 	FVector FallAcceleration = GetFallingLateralAcceleration(deltaTime);
@@ -204,7 +207,7 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	FVector OldLocation = UpdatedComponent->GetComponentLocation();
 	const FVector Adjusted = Velocity * deltaTime;
 	FHitResult Hit(1.f);
-	SafeMoveUpdatedComponent(Adjusted, NewRotation, true, Hit);
+	SafeMoveUpdatedComponent(Adjusted, Safe_qNewRotation, true, Hit);
 
 	if (Hit.Time < 1.f)
 	{

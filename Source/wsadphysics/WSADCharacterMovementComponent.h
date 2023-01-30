@@ -29,7 +29,7 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 	public:
 
 		FVector Saved_vThrust;
-		FQuat Saved_qNewRotationDelta;
+		FQuat Saved_qNewRotation;
 		typedef FSavedMove_Character Super;
 
 		virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
@@ -53,7 +53,7 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 	UPROPERTY(Transient) AwsadphysicsCharacter* WsadCharacterOwner;
 
 	FVector Safe_vThrust;
-	FQuat Safe_qNewRotationDelta;
+	FQuat Safe_qNewRotation;
 
 	FVector2d Safe_vInputRotationVector;
 	float Safe_fInputThrust;
