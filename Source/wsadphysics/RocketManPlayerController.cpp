@@ -28,6 +28,18 @@ void ARocketManPlayerController::BeginPlay()
 	}
 }
 
+void ARocketManPlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (IsLocalController())
+	{
+		const FQuat CurrentRotation = GetControlRotation().Quaternion();
+		const FQuat DesiredRotation = CurrentRotation * CalculateRotationDelta(DeltaSeconds);
+		SetControlRotation(DesiredRotation.Rotator());
+	}	
+}
+
 void ARocketManPlayerController::OpenPauseMenu()
 {
 	if (bPauseMenuEnabled)
@@ -69,6 +81,18 @@ void ARocketManPlayerController::StopThruster()
 	Thrust(.0f);
 }
 
+FQuat ARocketManPlayerController::CalculateRotationDelta(float DeltaTime)
+{
+	// Add Rotation
+	constexpr double rotationStrength = 100;
+	const double RollRotation = Safe_vInputRotationVector.X * rotationStrength * DeltaTime;
+	const double PitchRotation = Safe_vInputRotationVector.Y * rotationStrength * DeltaTime * -1.f;
+
+	FQuat RotationDelta = FRotator(PitchRotation, 0, RollRotation).Quaternion();
+	RotationDelta.Normalize();
+	return RotationDelta;
+}
+
 void ARocketManPlayerController::Thrust(const float ThrustValue)
 {
 	if (UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(RocketCharacterOwner->GetCharacterMovement()))
@@ -80,9 +104,6 @@ void ARocketManPlayerController::Thrust(const float ThrustValue)
 void ARocketManPlayerController::Rotate(const FInputActionValue& Value)
 {
 	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	if (UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(RocketCharacterOwner->GetCharacterMovement()))
-	{
-		CharacterMovement->SetRotation(MovementVector);
-	}
+	Safe_vInputRotationVector = Value.Get<FVector2D>();
+	UE_LOG(LogTemp, Warning, TEXT("Updated Rotation"));
 }

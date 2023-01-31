@@ -27,7 +27,7 @@ bool UWSADCharacterMovementComponent::FSavedMove_WSAD::CanCombineWith(const FSav
 void UWSADCharacterMovementComponent::FSavedMove_WSAD::Clear()
 {
 	Super::Clear();
-	Saved_qNewRotation = FQuat();
+	Saved_qNewRotation = FQuat::Identity;
 	Saved_vThrust = FVector::ZeroVector;
 }
 
@@ -87,18 +87,6 @@ void UWSADCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 	Super::UpdateFromCompressedFlags(Flags);
 }
 
-FQuat UWSADCharacterMovementComponent::CalculateRotationDelta(float DeltaTime)
-{
-	// Add Rotation
-	const double rotationStrength = 100;
-	const double RollRotation = Safe_vInputRotationVector.X * rotationStrength * DeltaTime;
-	const double PitchRotation = Safe_vInputRotationVector.Y * rotationStrength * DeltaTime * -1.f;
-
-	FQuat RotationDelta = FRotator(PitchRotation, 0, RollRotation).Quaternion();
-	RotationDelta.Normalize();
-	return RotationDelta;
-}
-
 FVector UWSADCharacterMovementComponent::CalculateThrustDelta(float DeltaTime)
 {
 	// Add Rotation
@@ -118,19 +106,13 @@ void UWSADCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, cons
 	//Store movement vector
 	if (PawnOwner->IsLocallyControlled())
 	{
-		Safe_qNewRotation = UpdatedComponent->GetComponentQuat() * CalculateRotationDelta(DeltaSeconds);
-		Safe_qNewRotation.Normalize();
 		Safe_vThrust = CalculateThrustDelta(DeltaSeconds);
-		// MoveDirection = PawnOwner->GetLastMovementInputVector();
 	}
 	//Send movement vector to server
 	if (GetOwnerRole() < ROLE_Authority)
 	{
 		ServerSetThrust(Safe_vThrust);
-		ServerSetRotation(Safe_qNewRotation);
 	}
-
-	Velocity += Safe_vThrust;
 }
 
 bool UWSADCharacterMovementComponent::ServerSetThrust_Validate(const FVector& Thrust)
@@ -141,16 +123,6 @@ bool UWSADCharacterMovementComponent::ServerSetThrust_Validate(const FVector& Th
 void UWSADCharacterMovementComponent::ServerSetThrust_Implementation(const FVector& Thrust)
 {
 	Safe_vThrust = Thrust;
-}
-
-bool UWSADCharacterMovementComponent::ServerSetRotation_Validate(const FQuat& Rotation)
-{
-	return true;
-}
-
-void UWSADCharacterMovementComponent::ServerSetRotation_Implementation(const FQuat& Rotation)
-{
-	Safe_qNewRotation = Rotation;
 }
 
 void UWSADCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
@@ -175,6 +147,8 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	}
 
 	RestorePreAdditiveRootMotionVelocity();
+
+	Velocity += Safe_vThrust;
 	
 	float timeTick = GetSimulationTimeStep(deltaTime, Iterations);
 	
@@ -188,10 +162,10 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	// Compute current gravity
 	const FVector Gravity(0.f, 0.f, GetGravityZ());
 	float GravityTime = timeTick;
-
+	
 	// Apply gravity
 	Velocity = NewFallVelocity(Velocity, Gravity, GravityTime);
-	
+
 	// Calc Velocity
 	if (!HasAnimRootMotion() && !CurrentRootMotion.HasOverrideVelocity())
 	{
@@ -207,7 +181,8 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	FVector OldLocation = UpdatedComponent->GetComponentLocation();
 	const FVector Adjusted = Velocity * deltaTime;
 	FHitResult Hit(1.f);
-	SafeMoveUpdatedComponent(Adjusted, Safe_qNewRotation, true, Hit);
+	// SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
+	SafeMoveUpdatedComponent(Adjusted, UpdatedComponent->GetComponentQuat(), true, Hit);
 
 	if (Hit.Time < 1.f)
 	{
@@ -241,18 +216,18 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	}
 }
 
+void UWSADCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
 void UWSADCharacterMovementComponent::SetThruster(const float Thrust)
 {
 	Safe_fInputThrust = Thrust;
 }
 
-void UWSADCharacterMovementComponent::SetRotation(const FVector2D& Rotation)
-{
-	Safe_vInputRotationVector = Rotation;
-}
-
 UWSADCharacterMovementComponent::UWSADCharacterMovementComponent()
 {
-	Safe_vInputRotationVector = FVector2d::Zero();
+	bUseControllerDesiredRotation = true;
 	Safe_fInputThrust = 0.f;
 }
