@@ -148,7 +148,7 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 
 	RestorePreAdditiveRootMotionVelocity();
 
-	Velocity += Safe_vThrust;
+	// Velocity += Safe_vThrust;
 	
 	float timeTick = GetSimulationTimeStep(deltaTime, Iterations);
 	

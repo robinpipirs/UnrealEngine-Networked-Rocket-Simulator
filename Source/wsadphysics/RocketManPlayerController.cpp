@@ -32,12 +32,12 @@ void ARocketManPlayerController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (IsLocalController())
-	{
-		const FQuat CurrentRotation = GetControlRotation().Quaternion();
-		const FQuat DesiredRotation = CurrentRotation * CalculateRotationDelta(DeltaSeconds);
-		SetControlRotation(DesiredRotation.Rotator());
-	}	
+	// if (IsLocalController())
+	// {
+	// 	const FQuat CurrentRotation = GetControlRotation().Quaternion();
+	// 	const FQuat DesiredRotation = CurrentRotation * CalculateRotationDelta(DeltaSeconds);
+	// 	SetControlRotation(DesiredRotation.Rotator());
+	// }	
 }
 
 void ARocketManPlayerController::OpenPauseMenu()
@@ -97,7 +97,8 @@ void ARocketManPlayerController::Thrust(const float ThrustValue)
 {
 	if (UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(RocketCharacterOwner->GetCharacterMovement()))
 	{
-		CharacterMovement->SetThruster(ThrustValue);
+		// CharacterMovement->SetThruster(ThrustValue);
+		CharacterMovement->AddInputVector(RocketCharacterOwner->GetActorUpVector() * 1.f, false);
 	}
 }
 
@@ -105,5 +106,7 @@ void ARocketManPlayerController::Rotate(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	Safe_vInputRotationVector = Value.Get<FVector2D>();
+	AddRollInput(Safe_vInputRotationVector.X);
+	AddPitchInput(Safe_vInputRotationVector.Y);
 	UE_LOG(LogTemp, Warning, TEXT("Updated Rotation"));
 }
