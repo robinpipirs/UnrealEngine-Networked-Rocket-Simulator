@@ -3,6 +3,7 @@
 
 #include "WSADCharacterMovementComponent.h"
 
+#include "RocketManPlayerController.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PhysicsVolume.h"
 
@@ -10,11 +11,6 @@ bool UWSADCharacterMovementComponent::FSavedMove_WSAD::CanCombineWith(const FSav
 	ACharacter* InCharacter, float MaxDelta) const
 {
 	FSavedMove_WSAD* NewWSADMove = static_cast<FSavedMove_WSAD*>(NewMove.Get());
-	
-	if (Saved_qNewRotation != NewWSADMove->Saved_qNewRotation)
-	{
-		return false;
-	}
 
 	if (Saved_vThrust != NewWSADMove->Saved_vThrust)
 	{
@@ -27,7 +23,6 @@ bool UWSADCharacterMovementComponent::FSavedMove_WSAD::CanCombineWith(const FSav
 void UWSADCharacterMovementComponent::FSavedMove_WSAD::Clear()
 {
 	Super::Clear();
-	Saved_qNewRotation = FQuat::Identity;
 	Saved_vThrust = FVector::ZeroVector;
 }
 
@@ -43,7 +38,6 @@ void UWSADCharacterMovementComponent::FSavedMove_WSAD::SetMoveFor(ACharacter* C,
 
 	if(const UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(C->GetCharacterMovement()))
 	{
-		Saved_qNewRotation = CharacterMovement->Safe_qNewRotation;
 		Saved_vThrust = CharacterMovement->Safe_vThrust;
 	}
 }
@@ -54,7 +48,6 @@ void UWSADCharacterMovementComponent::FSavedMove_WSAD::PrepMoveFor(ACharacter* C
 
 	if(UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(C->GetCharacterMovement()))
 	{
-		CharacterMovement->Safe_qNewRotation = Saved_qNewRotation;
 		CharacterMovement->Safe_vThrust = Saved_vThrust;
 	}
 }
@@ -103,16 +96,25 @@ void UWSADCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, cons
 	{
 		return;
 	}
-	//Store movement vector
-	if (PawnOwner->IsLocallyControlled())
-	{
-		Safe_vThrust = CalculateThrustDelta(DeltaSeconds);
-	}
+	// //Store movement vector
+	// if (PawnOwner->IsLocallyControlled())
+	// {
+	// 	Safe_vThrust = CalculateThrustDelta(DeltaSeconds);
+	// }
 	//Send movement vector to server
-	if (GetOwnerRole() < ROLE_Authority)
-	{
-		ServerSetThrust(Safe_vThrust);
-	}
+	// if (GetOwnerRole() < ROLE_Authority)
+	// {
+	// 	ServerSetThrust(Safe_vThrust);
+	// 	// Safe_qNewRotation = Safe_qDeltaRotation * CharacterOwner->GetActorQuat();
+	// 	Safe_qNewRotation = Safe_qDeltaRotation * UpdatedComponent->GetComponentQuat();
+	// 	ServerSetDeltaRotation(Safe_qNewRotation);
+	// }
+	//
+	// // UpdatedComponent->SetRelativeRotation(Safe_qNewRotation);
+	// if (CharacterOwner)
+	// {
+	// 	CharacterOwner->SetActorRotation(Safe_qNewRotation);
+	// }
 }
 
 bool UWSADCharacterMovementComponent::ServerSetThrust_Validate(const FVector& Thrust)
@@ -125,11 +127,23 @@ void UWSADCharacterMovementComponent::ServerSetThrust_Implementation(const FVect
 	Safe_vThrust = Thrust;
 }
 
+bool UWSADCharacterMovementComponent::ServerSetDeltaRotation_Validate(const FQuat& DeltaRotation)
+{
+	return true;
+}
+
+void UWSADCharacterMovementComponent::ServerSetDeltaRotation_Implementation(const FQuat& DeltaRotation)
+{
+	Safe_qNewRotation = DeltaRotation;
+}
+
+
+
 void UWSADCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
 {
 	Super::PhysCustom(deltaTime, Iterations);
 
-	PhysMove(deltaTime, Iterations);
+	// PhysMove(deltaTime, Iterations);
 	// switch (CustomMovementMode)
 	// {
 	// case CMOVE_Slide:
@@ -216,18 +230,22 @@ void UWSADCharacterMovementComponent::PhysMove(float deltaTime, int32 Iterations
 	}
 }
 
-void UWSADCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-}
-
 void UWSADCharacterMovementComponent::SetThruster(const float Thrust)
 {
 	Safe_fInputThrust = Thrust;
 }
 
+void UWSADCharacterMovementComponent::SetDeltaRotation(const FQuat& DeltaRotation)
+{
+	Safe_qDeltaRotation = DeltaRotation;
+}
+
 UWSADCharacterMovementComponent::UWSADCharacterMovementComponent()
 {
-	bUseControllerDesiredRotation = true;
+	
+	bUseControllerDesiredRotation = false;
+	bOrientRotationToMovement = false;
 	Safe_fInputThrust = 0.f;
+	Safe_qDeltaRotation = FQuat::Identity;
+	Safe_qNewRotation = FQuat::Identity;
 }
