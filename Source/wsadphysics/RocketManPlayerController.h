@@ -22,6 +22,8 @@ class WSADPHYSICS_API ARocketManPlayerController : public APlayerController
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UPauseMenuWidget> PauseMenuWidgetClass;
 
@@ -49,12 +51,19 @@ protected:
 	
 	UFUNCTION()
 	void StopThruster();
-	
+
 	UFUNCTION()
 	void Thrust(const float ThrustValue);
 	
 	UFUNCTION()
 	void Rotate(const FInputActionValue& Value);
+
+	virtual void AddRollInput(float Val) override;
+	virtual void AddPitchInput(float Val) override;
+	virtual void AddYawInput(float Val) override;
+
+	UFUNCTION()
+	FQuat CalculateRotationDelta(float DeltaTime);
 	
 public:
 	virtual void SetupInputComponent() override;
@@ -65,4 +74,6 @@ private:
 	UPROPERTY() bool bPauseMenuEnabled;
 
 	UPROPERTY(Transient) AwsadphysicsCharacter* RocketCharacterOwner;
+
+	UPROPERTY() FVector2D Safe_vInputRotationVector;
 };

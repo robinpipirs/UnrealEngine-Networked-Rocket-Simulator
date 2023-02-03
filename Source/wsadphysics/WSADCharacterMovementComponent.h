@@ -29,7 +29,7 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 	public:
 
 		FVector Saved_vThrust;
-		FQuat Saved_qNewRotationDelta;
+		FQuat Saved_qNewRotation;
 		typedef FSavedMove_Character Super;
 
 		virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
@@ -53,34 +53,29 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 	UPROPERTY(Transient) AwsadphysicsCharacter* WsadCharacterOwner;
 
 	FVector Safe_vThrust;
-	FQuat Safe_qNewRotationDelta;
+	FQuat Safe_qNewRotation;
 
-	FVector2d Safe_vInputRotationVector;
 	float Safe_fInputThrust;
 
-	const float FMaxThrust = 2000.f;
+	const float FMaxThrust = 3000.f;
 
 	UFUNCTION(Unreliable, Server, WithValidation)
 	void ServerSetThrust(const FVector& Thrust);
-
-	UFUNCTION(Unreliable, Server, WithValidation)
-	void ServerSetRotation(const FQuat& Rotation);
 
 public:
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 
 protected:
 	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
-	FQuat CalculateRotationDelta(float DeltaTime);
 	FVector CalculateThrustDelta(float DeltaTime);
 	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
-	void PhysCustom(float deltaTime, int32 Iterations);
+	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	void PhysMove(float deltaTime, int32 Iterations);
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
 	UWSADCharacterMovementComponent();
 
 public:
 	UFUNCTION(BlueprintCallable) void SetThruster(float Thrust);
-	UFUNCTION(BlueprintCallable) void SetRotation(const FVector2D& Rotation);
 };
