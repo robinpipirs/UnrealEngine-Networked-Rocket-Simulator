@@ -58,6 +58,10 @@ protected:
 	UFUNCTION()
 	void Rotate(const FInputActionValue& Value);
 
+	virtual void AddRollInput(float Val) override;
+	virtual void AddPitchInput(float Val) override;
+	virtual void AddYawInput(float Val) override;
+
 	UFUNCTION()
 	FQuat CalculateRotationDelta(float DeltaTime);
 	

@@ -7,6 +7,8 @@
 #include "EnhancedInputSubsystems.h"
 #include "Kismet/GameplayStatics.h"
 #include "WSADCharacterMovementComponent.h"
+#include "Kismet/KismetMaterialLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ARocketManPlayerController::ARocketManPlayerController()
 {
@@ -15,6 +17,16 @@ ARocketManPlayerController::ARocketManPlayerController()
 void ARocketManPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// if (PlayerCameraManager)
+	// {
+	// 	PlayerCameraManager->ViewPitchMax = 359.998993f;
+	// 	PlayerCameraManager->ViewYawMin = 0.0f;
+	// 	PlayerCameraManager->ViewYawMax = 359.998993f;
+	// 	PlayerCameraManager->ViewRollMin = 0.0f;
+	// 	PlayerCameraManager->ViewRollMax = 359.998993f;
+	// }
+	
 	bPauseMenuEnabled = !UGameplayStatics::GetCurrentLevelName(this, true).Equals(DefaultMainMenuLevelName, ESearchCase::IgnoreCase);
 
 	if (ACharacter* CurrentCharacter = GetCharacter())
@@ -106,7 +118,37 @@ void ARocketManPlayerController::Rotate(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	Safe_vInputRotationVector = Value.Get<FVector2D>();
+	// const FQuat CalculatedRotationQuat = CalculateRotationDelta(0.1f) * RootComponent->GetComponentQuat();
+	// const FRotator TargetRotation = FRotator(CalculatedRotationQuat);
+	// SetControlRotation(TargetRotation);
 	AddRollInput(Safe_vInputRotationVector.X);
 	AddPitchInput(Safe_vInputRotationVector.Y);
 	UE_LOG(LogTemp, Warning, TEXT("Updated Rotation"));
+}
+
+void ARocketManPlayerController::AddRollInput(float Val)
+{
+	// Super::AddRollInput(Val);
+	const FQuat RotInput = RotationInput.Quaternion();
+	const FQuat RotationDelta = FRotator(0, 0, Val).Quaternion();
+	const FQuat RotationResult = RotationDelta * RotInput;
+	RotationInput = RotationResult.Rotator();
+}
+
+void ARocketManPlayerController::AddPitchInput(float Val)
+{
+	// Super::AddPitchInput(Val);
+	const FQuat RotInput = RotationInput.Quaternion();
+	const FQuat RotationDelta = FRotator(Val, 0, 0).Quaternion();
+	const FQuat RotationResult = RotationDelta * RotInput;
+	RotationInput = RotationResult.Rotator();
+}
+
+void ARocketManPlayerController::AddYawInput(float Val)
+{
+	// Super::AddYawInput(Val);
+	const FQuat RotInput = RotationInput.Quaternion();
+	const FQuat RotationDelta = FRotator(0, Val, 0).Quaternion();
+	const FQuat RotationResult = RotationDelta * RotInput;
+	RotationInput = RotationResult.Rotator();
 }
