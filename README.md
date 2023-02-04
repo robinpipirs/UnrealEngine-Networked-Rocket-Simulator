@@ -1,4 +1,4 @@
-# Multiplayer Stylized Rocket Simulator
+# Multiplayer Stylized 6DoF Rocket Simulator
 This project is a sandbox project for networked 6DoF lunar lander.
 With some tweaks to the project it can be used for a space game, Drone simulator etc.   
 
