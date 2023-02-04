@@ -57,11 +57,6 @@ class WSADPHYSICS_API UWSADCharacterMovementComponent : public UCharacterMovemen
 
 	float Safe_fInputThrust;
 
-	const float FMaxThrust = 3000.f;
-
-	UFUNCTION(Unreliable, Server, WithValidation)
-	void ServerSetThrust(const FVector& Thrust);
-
 public:
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 

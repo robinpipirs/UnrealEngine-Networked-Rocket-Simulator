@@ -87,42 +87,10 @@ void UWSADCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 	Super::UpdateFromCompressedFlags(Flags);
 }
 
-FVector UWSADCharacterMovementComponent::CalculateThrustDelta(float DeltaTime)
-{
-	// Add Rotation
-	const float ThrustForce = Safe_fInputThrust * .6f * FMaxThrust;
-	const FVector ThrustDelta = UpdatedComponent->GetUpVector() * DeltaTime * ThrustForce;
-	return ThrustDelta;
-}
-
 void UWSADCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation,
                                                         const FVector& OldVelocity)
 {
 	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
-	if (!CharacterOwner)
-	{
-		return;
-	}
-	//Store movement vector
-	if (PawnOwner->IsLocallyControlled())
-	{
-		Safe_vThrust = CalculateThrustDelta(DeltaSeconds);
-	}
-	//Send movement vector to server
-	if (GetOwnerRole() < ROLE_Authority)
-	{
-		ServerSetThrust(Safe_vThrust);
-	}
-}
-
-bool UWSADCharacterMovementComponent::ServerSetThrust_Validate(const FVector& Thrust)
-{
-	return true;
-}
-
-void UWSADCharacterMovementComponent::ServerSetThrust_Implementation(const FVector& Thrust)
-{
-	Safe_vThrust = Thrust;
 }
 
 void UWSADCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)

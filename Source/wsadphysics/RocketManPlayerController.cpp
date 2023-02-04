@@ -5,10 +5,8 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "WSADCharacterMovementComponent.h"
-#include "Kismet/KismetMaterialLibrary.h"
-#include "Kismet/KismetMathLibrary.h"
 
 ARocketManPlayerController::ARocketManPlayerController()
 {
@@ -107,7 +105,7 @@ FQuat ARocketManPlayerController::CalculateRotationDelta(float DeltaTime)
 
 void ARocketManPlayerController::Thrust(const float ThrustValue)
 {
-	if (UWSADCharacterMovementComponent* CharacterMovement = Cast<UWSADCharacterMovementComponent>(RocketCharacterOwner->GetCharacterMovement()))
+	if (UCharacterMovementComponent* CharacterMovement = RocketCharacterOwner->GetCharacterMovement())
 	{
 		// CharacterMovement->SetThruster(ThrustValue);
 		CharacterMovement->AddInputVector(RocketCharacterOwner->GetActorUpVector() * 1.f, false);
@@ -122,7 +120,7 @@ void ARocketManPlayerController::Rotate(const FInputActionValue& Value)
 	// const FRotator TargetRotation = FRotator(CalculatedRotationQuat);
 	// SetControlRotation(TargetRotation);
 	AddRollInput(Safe_vInputRotationVector.X);
-	AddPitchInput(Safe_vInputRotationVector.Y);
+	AddPitchInput(Safe_vInputRotationVector.Y * -1.f);
 	UE_LOG(LogTemp, Warning, TEXT("Updated Rotation"));
 }
 
