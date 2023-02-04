@@ -7,7 +7,7 @@ The plan for this project is to evolve into a multiplayer lunar lander example.
 # Overcome gimbal lock for 6DoF
 ~~In order to enable 6DoF we had to extend the base Character Movement Component for networked physics based movement.~~ 
   
-So I actually found an easier solution which already replicates. If you have tried the third person example in unreal engine you know it replicates well.  
+Found an easier solution which already replicates. If you have tried the third person example in unreal engine you know it replicates well.  
 
 The addRotation functions eg. ```AddRollInput(float Val)``` already works for replication of rotation but suffers from gimbal-lock,   
 reason is the use of euler rotation. To solve this override the function implementation in the Player Controller and replace the implementation with one Quaternion  delta rotation.
